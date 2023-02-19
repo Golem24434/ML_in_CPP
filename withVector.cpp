@@ -28,6 +28,8 @@ public:
     vector<double> getStandardDeviation(vector<double> *standardDeviation);
     vector<double> getStandardError(vector<double> *standardError);
     double getTestF();
+    vector<vector<double>> getTestT();
+    vector<vector<double>> getCoefficientCorrelation();
 };
 
 Statistics::Statistics(vector<vector<double>> inputSamples) {
@@ -133,6 +135,42 @@ double Statistics::getTestF() {
     double testF = ((SSB / (samples.size() - 1)) / (SSW / (numberObjects - samples.size())));
     return testF;
 }
+vector<vector<double>> Statistics::getTestT() {
+    vector<double> average;
+    getAverage(&average);
+    vector<double> standardDeviation;
+    getStandardDeviation(&standardDeviation);
+    vector<vector<double>> testT(samples.size(), vector<double>(samples.size(), 0));
+    for (int i = 0; i < samples.size(); ++i) {
+        for (int j = 0; j < samples.size(); ++j) {
+            double differenceAverage = abs(average[i] - average[j]);
+            double iSquareAverageStandardDeviation = pow(standardDeviation[i], 2)/samples[i].size();
+            double jSquareAverageStandardDeviation = pow(standardDeviation[j], 2)/samples[j].size();
+            testT[i][j] = differenceAverage / (sqrt(iSquareAverageStandardDeviation + jSquareAverageStandardDeviation));
+        }
+    }
+    return testT;
+}
+vector<vector<double>> Statistics::getCoefficientCorrelation() {
+    vector<double> average;
+    getAverage(&average);
+    vector<vector<double>> coefficientCorrelation(samples.size(), vector<double>(samples.size(), 0));
+    double iSquareDeviation(0), jSquareDeviation(0), sumDeviation(0);
+    for (int i = 0; i < samples.size(); ++i) {
+        for (int j = 0; j < samples.size(); ++j) {
+            for (int k = 0; k < samples[i].size(); ++k) {
+                sumDeviation += (average[i] - samples[i][k]) * (average[j] - samples[j][k]);
+                iSquareDeviation += pow((average[i] - samples[i][k]), 2);
+                jSquareDeviation += pow((average[j] - samples[j][k]), 2);
+            }
+            coefficientCorrelation[i][j] = sumDeviation / sqrt(iSquareDeviation * jSquareDeviation);
+            iSquareDeviation = 0; 
+            jSquareDeviation = 0;
+            sumDeviation = 0;
+        }
+    }
+    return coefficientCorrelation;
+}
 
 void TestStandartMethodsStatistics() {
     vector<double> testFirstSample = {31, 32, 33, 34, 35, 35, 40, 41, 42, 46};
@@ -151,13 +189,13 @@ void TestStandartMethodsStatistics() {
     vector<double> correctStandardDeviation = {4.99889, 2.39898, 5.84218};
     testObject.getStandardDeviation(&standardDeviation);
     for (int i = 0; i < standardDeviation.size(); i++) {
-        assert(standardDeviation[i] != correctStandardDeviation[i]);
+        assert(abs(standardDeviation[i] - correctStandardDeviation[i]) < 0.0001);
     }
     vector<double> standardError;
     vector<double> correctStandardError = {1.58079, 0.758624, 1.84746};
     testObject.getStandardError(&standardError);
     for (int i = 0; i < standardError.size(); i++) {
-        assert(standardError[i] != correctStandardError[i]);
+        assert(abs(standardError[i] - correctStandardError[i]) < 0.0001);
     }
 }
 void TestTestStatistics() {
@@ -169,7 +207,26 @@ void TestTestStatistics() {
     vector<double>& pTestThirdSample = testThirdSample;
     vector<vector<double>> testSamples = {testFirstSample, testSecondSample, testThirdSample};
     Statistics testObject(testSamples);
-    assert(testObject.getTestF() != 3);
+    assert(testObject.getTestF() == 12);
+    vector<vector<double>> testT = testObject.getTestT();
+    double correctTestT[3][3] = {
+                                {0, 2.44949, 4.89898},
+                                {2.44949, 0, 2.44949},
+                                {4.89898, 2.44949, 0}
+    };
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            assert(abs(testT[i][j] - correctTestT[i][j]) < 0.0001);
+        }
+    }
+    vector<vector<double>> coefficientCorrelation = testObject.getCoefficientCorrelation();
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            std::cout << coefficientCorrelation[i][j] << "   ";
+            //assert(abs(testT[i][j] - correctTestT[i][j]) < 0.0001);
+        }
+        std::cout << endl;
+    }
 }
 
 int main() {
