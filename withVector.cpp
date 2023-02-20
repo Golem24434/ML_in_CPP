@@ -14,6 +14,20 @@
 
 using namespace std;
 
+vector<double> getRegressionParameters(vector<double> independent, vector<double> dependent) {
+    double sumIndVar(0), sumDepVar(0), sumMultiplication(0), sumSqIndVar(0);
+    vector<double> regressionParameters(2, 0);
+    for (int i = 0; i < independent.size(); i++) {
+		sumIndVar += independent[i];
+        sumSqIndVar += pow(independent[i], 2);
+        sumDepVar += dependent[i];
+        sumMultiplication += independent[i] * dependent[i];
+	}
+    regressionParameters[0] = ((sumDepVar * sumSqIndVar) - (sumIndVar * sumMultiplication)) / (independent.size() * sumSqIndVar - pow(sumIndVar, 2));
+    regressionParameters[1] = (independent.size() * sumMultiplication - (sumDepVar * sumIndVar)) / (independent.size() * sumSqIndVar - pow(sumIndVar, 2));
+    return regressionParameters;
+}
+
 class Statistics {
 protected:
 	vector<vector<double>> samples;
@@ -30,6 +44,7 @@ public:
     double getTestF();
     vector<vector<double>> getTestT();
     vector<vector<double>> getCoefficientCorrelation();
+    
 };
 
 Statistics::Statistics(vector<vector<double>> inputSamples) {
@@ -172,6 +187,7 @@ vector<vector<double>> Statistics::getCoefficientCorrelation() {
     return coefficientCorrelation;
 }
 
+
 void TestStandartMethodsStatistics() {
     vector<double> testFirstSample = {31, 32, 33, 34, 35, 35, 40, 41, 42, 46};
     vector<double> testSecondSample = {7.8, 8.3, 7.6, 9.1, 9.6, 9.8, 11.8, 12.1, 14.7, 13.0};
@@ -220,13 +236,19 @@ void TestTestStatistics() {
         }
     }
     vector<vector<double>> coefficientCorrelation = testObject.getCoefficientCorrelation();
+    double correctCoefficientCorrelation[3][3] = {
+                                {1, 1, 0.5},
+                                {1, 1, 0.5},
+                                {0.5, 0.5, 1}
+    };
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-            std::cout << coefficientCorrelation[i][j] << "   ";
-            //assert(abs(testT[i][j] - correctTestT[i][j]) < 0.0001);
+            assert(abs(correctCoefficientCorrelation[i][j] - coefficientCorrelation[i][j]) < 0.0001);
         }
         std::cout << endl;
     }
+    assert(abs(getRegressionParameters(testFirstSample, testSecondSample)[1] - 1) < 0.0001);
+    assert(abs(getRegressionParameters(testFirstSample, testSecondSample)[0] - 2) < 0.0001);
 }
 
 int main() {
